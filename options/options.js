@@ -140,6 +140,7 @@ async function load() {
   renderProviderFields();
   $('max-steps').value = settings.maxSteps ?? 40;
   $('confirm-submit').checked = settings.confirmBeforeSubmit !== false;
+  $('vision-mode').checked = settings.visionMode === true;
   for (const f of PROFILE_FIELDS) {
     const el = $(`p-${f}`);
     if (el) el.value = settings.profile?.[f] || '';
@@ -152,6 +153,7 @@ $('save').addEventListener('click', async () => {
   settings.activeProvider = currentProviderId();
   settings.maxSteps = Math.max(5, Math.min(100, parseInt($('max-steps').value, 10) || 40));
   settings.confirmBeforeSubmit = $('confirm-submit').checked;
+  settings.visionMode = $('vision-mode').checked;
   settings.profile = settings.profile || {};
   for (const f of PROFILE_FIELDS) {
     const el = $(`p-${f}`);

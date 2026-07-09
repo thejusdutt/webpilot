@@ -59,8 +59,23 @@ side panel ──port──> background service worker ──fetch──> LLM pr
 ### Agent tools
 
 `click`, `type_text`, `select_option`, `set_checkbox`, `scroll`, `navigate`,
-`go_back`, `wait`, `read_page`, `upload_file` (stored resume), `ask_user`
-(pauses and asks you in the panel), `done`.
+`go_back`, `wait`, `read_page`, `screenshot` (viewport capture sent to the
+model as an image), `upload_file` (stored resume), `ask_user` (pauses and asks
+you in the panel), `done`.
+
+### Vision
+
+Screenshots are captured with `chrome.tabs.captureVisibleTab`, downscaled to
+≤1024 px JPEG in the service worker, and sent as multimodal image blocks
+(OpenAI `image_url` data URLs / Anthropic base64 `image` blocks). Two modes:
+
+- **On demand** — the agent calls the `screenshot` tool when the DOM isn't
+  enough (canvas, images, visual layout).
+- **Vision mode** (Settings toggle, off by default) — a screenshot is attached
+  automatically on every step. Needs a vision-capable model; costs more tokens.
+
+Only the newest screenshot is kept in history; older ones are pruned together
+with stale page states.
 
 ### Safety rails
 
@@ -75,8 +90,8 @@ side panel ──port──> background service worker ──fetch──> LLM pr
 
 - Works on normal web pages; `chrome://`, the Web Store, and other extension
   pages can't be scripted (Chrome restriction).
-- DOM-based (no screenshots), so canvas-heavy UIs aren't visible to the agent.
-  Vision support would be the natural next step (`chrome.tabs.captureVisibleTab`).
+- `captureVisibleTab` shoots what's visible in the window, so the agent
+  activates its tab before capturing.
 - Cross-origin iframes (some embedded ATS forms) aren't reachable from the top
   frame's snapshot yet.
 - Anthropic requests include the `anthropic-dangerous-direct-browser-access`

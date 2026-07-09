@@ -110,6 +110,19 @@ function toOpenAIMessages(messages) {
     if (m.role === 'tool') {
       return { role: 'tool', tool_call_id: m.toolCallId, content: m.content ?? '' };
     }
+    if (m.role === 'user' && m.images?.length) {
+      // OpenAI-compatible multimodal user message (data URLs).
+      return {
+        role: 'user',
+        content: [
+          { type: 'text', text: m.content ?? '' },
+          ...m.images.map((im) => ({
+            type: 'image_url',
+            image_url: { url: `data:${im.mimeType};base64,${im.base64}` },
+          })),
+        ],
+      };
+    }
     return { role: m.role, content: m.content ?? '' };
   });
 }
@@ -192,7 +205,21 @@ function toAnthropicPayload(messages) {
         out.push({ role: 'user', content: [block] });
       }
     } else {
-      out.push({ role: 'user', content: m.content ?? '' });
+      // Plain user message, optionally with images. Merge into a preceding
+      // user message (e.g. one holding tool_result blocks) so the payload
+      // keeps clean user/assistant alternation.
+      const blocks = [];
+      for (const im of m.images || []) {
+        blocks.push({ type: 'image', source: { type: 'base64', media_type: im.mimeType, data: im.base64 } });
+      }
+      blocks.push({ type: 'text', text: m.content ?? '' });
+      const last = out[out.length - 1];
+      if (last && last.role === 'user') {
+        if (typeof last.content === 'string') last.content = [{ type: 'text', text: last.content }];
+        last.content.push(...blocks);
+      } else {
+        out.push({ role: 'user', content: m.images?.length ? blocks : (m.content ?? '') });
+      }
     }
   }
   return { system, messages: out };

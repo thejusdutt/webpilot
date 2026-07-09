@@ -97,6 +97,8 @@ main#log {
 .entry.result { color: var(--muted); font-size: 12px; padding: 2px 11px; }
 .entry.result.error { color: var(--red); }
 .entry.status { color: var(--muted); font-size: 12px; font-style: italic; }
+.entry.shot { padding: 4px; background: var(--panel); }
+.entry.shot img { max-width: 100%; border-radius: 8px; display: block; border: 1px solid #2e2e44; }
 .entry.error { background: #3a1c26; border-left: 3px solid var(--red); }
 .entry.done-ok { background: #16321f; border-left: 3px solid var(--green); }
 .entry.done-fail { background: #33261a; border-left: 3px solid var(--amber); }

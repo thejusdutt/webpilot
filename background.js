@@ -15,6 +15,7 @@ export const DEFAULT_SETTINGS = {
   providers: {},           // { [id]: { apiKey, model, baseUrl } }
   maxSteps: 40,
   confirmBeforeSubmit: true,
+  visionMode: false,       // attach a screenshot to every step (vision models only)
   profile: {
     fullName: '', email: '', phone: '', location: '',
     linkedin: '', website: '', workAuthorization: '',
@@ -119,6 +120,11 @@ const TOOLS = [
     },
   },
   {
+    name: 'screenshot',
+    description: 'Take a screenshot of the current viewport and attach it as an image. Use when the DOM element list is not enough to understand the page: canvas widgets, image content, visual layout questions, or to double-check what the user actually sees. Requires a vision-capable model.',
+    parameters: { type: 'object', properties: {} },
+  },
+  {
     name: 'upload_file',
     description: "Attach the user's stored resume/CV file to a file input element. Only works on <input type=file> elements.",
     parameters: {
@@ -168,6 +174,7 @@ HOW IT WORKS
 - Element indexes are ONLY valid for the most recent page state. After any click, navigation, or scroll, indexes may change — always use the latest state.
 - Elements marked (off-screen) exist but are outside the viewport; you can still interact with them (they will be scrolled into view automatically).
 - If the elements you need are not listed, scroll, or use read_page to understand the page.
+- If the DOM state is not enough (canvas widgets, images, visual layout), use the screenshot tool — the screenshot arrives as an image you can see.
 
 RULES
 1. Work step by step. Prefer one or two actions per turn, then re-check the page state.
@@ -208,6 +215,33 @@ async function sendToTab(tabId, action, params, options = {}) {
   return res.result;
 }
 
+/** Capture the tab's viewport as a downscaled JPEG (base64). */
+async function captureScreenshot(tabId, maxWidth = 1024) {
+  const tab = await chrome.tabs.get(tabId);
+  if (!tab.active) {
+    // captureVisibleTab shoots whatever is visible in the window.
+    await chrome.tabs.update(tabId, { active: true });
+    await sleep(300);
+  }
+  const dataUrl = await chrome.tabs.captureVisibleTab(tab.windowId, { format: 'jpeg', quality: 80 });
+  const blob = await (await fetch(dataUrl)).blob();
+  const bmp = await createImageBitmap(blob);
+  const scale = Math.min(1, maxWidth / bmp.width);
+  const w = Math.round(bmp.width * scale);
+  const h = Math.round(bmp.height * scale);
+  const canvas = new OffscreenCanvas(w, h);
+  canvas.getContext('2d').drawImage(bmp, 0, 0, w, h);
+  bmp.close();
+  const out = await canvas.convertToBlob({ type: 'image/jpeg', quality: 0.7 });
+  const bytes = new Uint8Array(await out.arrayBuffer());
+  let bin = '';
+  for (let i = 0; i < bytes.length; i += 0x8000) {
+    bin += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+  }
+  const base64 = btoa(bin);
+  return { mimeType: 'image/jpeg', base64, dataUrl: `data:image/jpeg;base64,${base64}` };
+}
+
 /** Wait for any in-flight navigation triggered by the last action to finish. */
 async function settle(tabId) {
   await sleep(700);
@@ -237,6 +271,7 @@ class AgentRun {
     this.stopped = false;
     this.abort = new AbortController();
     this.pendingAnswer = null;      // {resolve} while waiting on the user
+    this.pendingImages = [];        // screenshots to attach after this turn's tools
   }
 
   stop() {
@@ -267,11 +302,15 @@ class AgentRun {
     }
   }
 
-  /** Keep only the newest page state — old ones dominate token usage. */
+  /** Keep only the newest page state and screenshot — old ones dominate token usage. */
   pruneOldPageStates() {
     for (const m of this.messages) {
       if ((m.role === 'tool' || m.role === 'user') && typeof m.content === 'string') {
         m.content = m.content.replace(PAGE_STATE_RE, '[stale page state removed — see the latest one below]');
+      }
+      if (m.images?.length) {
+        delete m.images;
+        m.content = '[stale screenshot removed — see the latest one below]';
       }
     }
   }
@@ -329,6 +368,12 @@ class AgentRun {
         });
         await sleep(1000); // many ATSs parse the file and update the form
         return r.message;
+      }
+      case 'screenshot': {
+        const shot = await captureScreenshot(this.tabId);
+        this.pendingImages.push(shot);
+        this.post({ type: 'screenshot', dataUrl: shot.dataUrl });
+        return 'Screenshot captured — attached below as an image.';
       }
       case 'ask_user': {
         const answer = await this.askUser('ask', args.question || 'The agent has a question.');
@@ -419,6 +464,22 @@ class AgentRun {
       if (finished) {
         this.post({ type: 'done', success: finished.success, text: finished.summary });
         return;
+      }
+
+      // Attach screenshots: requested via the screenshot tool, or automatic in vision mode.
+      if (this.settings.visionMode && !this.pendingImages.length) {
+        try {
+          const shot = await captureScreenshot(this.tabId);
+          this.pendingImages.push(shot);
+          this.post({ type: 'screenshot', dataUrl: shot.dataUrl });
+        } catch { /* capture can fail on restricted pages — non-fatal */ }
+      }
+      if (this.pendingImages.length) {
+        this.messages.push({
+          role: 'user',
+          content: '[Screenshot of the current viewport]',
+          images: this.pendingImages.splice(0),
+        });
       }
     }
 

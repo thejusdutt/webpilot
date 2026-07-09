@@ -75,6 +75,14 @@ function onMessage(msg) {
     case 'result':
       addEntry(`result${msg.isError ? ' error' : ''}`, msg.text.split('\n')[0].slice(0, 300));
       break;
+    case 'screenshot': {
+      const div = addEntry('shot', '');
+      const img = document.createElement('img');
+      img.src = msg.dataUrl;
+      img.alt = 'screenshot';
+      div.appendChild(img);
+      break;
+    }
     case 'ask':
       showAsk(msg.text);
       break;
