@@ -264,6 +264,14 @@ async function refreshBadge() {
   const provider = settings?.activeProvider || 'openrouter';
   const model = settings?.providers?.[provider]?.model || '';
   modelBadge.textContent = model ? `${provider} · ${model}` : provider;
+  if (settings?.autonomousMode) {
+    modelBadge.textContent = `⚠️ autonomous · ${modelBadge.textContent}`;
+    modelBadge.classList.add('danger');
+    modelBadge.title = 'Autonomous mode is ON — no confirmations, no questions (change in Settings)';
+  } else {
+    modelBadge.classList.remove('danger');
+    modelBadge.title = 'Active provider · model';
+  }
 }
 
 chrome.storage.onChanged.addListener((changes) => {

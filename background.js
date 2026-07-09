@@ -27,6 +27,7 @@ export const DEFAULT_SETTINGS = {
   providers: {},           // { [id]: { apiKey, model, baseUrl } }
   maxSteps: 40,
   confirmBeforeSubmit: true,
+  autonomousMode: false,   // DANGEROUS: never pause — no confirmations, no questions
   visionMode: false,       // attach a screenshot to every step (vision models only)
   theme: 'light',          // side panel / options appearance
   profile: {
@@ -169,6 +170,11 @@ const TOOLS = [
   },
 ];
 
+function buildTools(settings) {
+  // Autonomous mode removes ask_user entirely — the agent cannot pause.
+  return settings.autonomousMode ? TOOLS.filter((t) => t.name !== 'ask_user') : TOOLS;
+}
+
 function buildSystemPrompt(settings) {
   const p = settings.profile;
   const profileLines = [
@@ -192,12 +198,18 @@ HOW IT WORKS
 RULES
 1. BE FAST — batch aggressively. When filling a form, emit ALL fill actions (type_text / select_option / set_checkbox) for every visible field in ONE turn; they execute in order and you get the updated state after the last one. Use a new turn only when an action's outcome determines the next one (navigation, a button that reveals new fields, a custom dropdown that must open first).
 1b. Keep commentary to one short sentence per turn, or none.
-2. Fill forms using the USER PROFILE below. NEVER fabricate personal data, qualifications, or answers. If a required field is not covered by the profile or task, call ask_user.
+2. Fill forms using the USER PROFILE below. NEVER fabricate personal data, qualifications, or answers.${settings.autonomousMode
+    ? ' If a required field is not covered by the profile or task, choose the most reasonable HONEST option (or leave optional fields empty) and list every such judgment call in your final done summary.'
+    : ' If a required field is not covered by the profile or task, call ask_user.'}
 3. For job applications: read the form carefully, fill every required field, attach the resume with upload_file where a CV/resume upload exists, and answer screening questions truthfully from the profile.
 4. Before clicking a final submit button, double-check that all required fields are filled and the values are correct.
 5. If the same action fails twice, try a different approach (scroll, read_page, another element) instead of repeating it.
-6. If a page requires login, CAPTCHA, or payment, stop and ask_user — never guess credentials.
-7. When the task is finished (or impossible), call done with an honest summary.
+6. If a page requires login, CAPTCHA, or payment, ${settings.autonomousMode
+    ? 'call done(success=false) explaining what blocked you — never guess credentials.'
+    : 'stop and ask_user — never guess credentials.'}
+7. When the task is finished (or impossible), call done with an honest summary.${settings.autonomousMode
+    ? '\n\nAUTONOMOUS MODE IS ON: you act fully on the user\'s behalf. You cannot ask questions and no confirmation dialogs will appear. Be decisive but conservative: stay strictly within the given task and never fabricate.'
+    : ''}
 
 USER PROFILE
 ${profileLines.length ? profileLines.join('\n') : '(empty — ask_user for any personal data you need)'}`;
@@ -338,7 +350,8 @@ class AgentRun {
     const { name, args = {} } = tc;
     switch (name) {
       case 'click': {
-        const result = await sendToTab(this.tabId, 'click', { index: args.index }, { confirmSubmit: this.settings.confirmBeforeSubmit });
+        const confirmSubmit = this.settings.confirmBeforeSubmit && !this.settings.autonomousMode;
+        const result = await sendToTab(this.tabId, 'click', { index: args.index }, { confirmSubmit });
         if (result.needsConfirmation) {
           const answer = await this.askUser('confirm', `The agent wants to click "${result.label}", which looks like a final submit action. Allow it?`);
           this.checkStopped();
@@ -395,6 +408,9 @@ class AgentRun {
         return 'Screenshot captured — attached below as an image.';
       }
       case 'ask_user': {
+        if (this.settings.autonomousMode) {
+          return 'Autonomous mode is on — the user cannot be asked. Proceed with your best honest judgment and note this in your final summary.';
+        }
         const answer = await this.askUser('ask', args.question || 'The agent has a question.');
         this.checkStopped();
         return answer ? `User answered: ${answer}` : 'User did not answer.';
@@ -409,6 +425,9 @@ class AgentRun {
     const providerLabel = PROVIDERS[providerId]?.label || providerId;
     const model = this.settings.providers?.[providerId]?.model || PROVIDERS[providerId]?.defaultModel;
     this.post({ type: 'status', text: `Running with ${providerLabel} · ${model}` });
+    if (this.settings.autonomousMode) {
+      this.post({ type: 'status', text: '⚠️ Autonomous mode — acting without confirmations or questions.' });
+    }
 
     this.messages.push({ role: 'system', content: buildSystemPrompt(this.settings) });
     await ensureContentScript(this.tabId);
@@ -427,7 +446,7 @@ class AgentRun {
       try {
         reply = await chat(providerId, this.settings, {
           messages: this.messages,
-          tools: TOOLS,
+          tools: buildTools(this.settings),
           signal: this.abort.signal,
         });
       } catch (err) {

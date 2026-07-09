@@ -108,6 +108,17 @@ button.primary:hover, button.secondary:hover { filter: brightness(1.06); }
 button.primary { background: var(--accent); color: #fff; }
 button.secondary { background: var(--surface-2); color: var(--text); border: 1px solid var(--border); }
 
+.danger-box {
+  margin-top: 14px;
+  padding: 12px 14px;
+  border: 1px solid color-mix(in srgb, var(--red) 45%, transparent);
+  background: color-mix(in srgb, var(--red) 7%, transparent);
+  border-radius: 10px;
+}
+.danger-box label { color: var(--text); line-height: 1.5; }
+.danger-box strong { color: var(--red); }
+.danger-box input[type="checkbox"] { accent-color: var(--red); }
+
 .save-row {
   position: sticky;
   bottom: 0;

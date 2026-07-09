@@ -80,6 +80,12 @@ header {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+.badge.danger {
+  color: var(--red);
+  border-color: color-mix(in srgb, var(--red) 45%, transparent);
+  background: var(--red-soft);
+  font-weight: 600;
+}
 
 .icon-btn {
   background: none;

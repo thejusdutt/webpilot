@@ -158,6 +158,7 @@ async function load() {
   $('max-steps').value = settings.maxSteps ?? 40;
   $('confirm-submit').checked = settings.confirmBeforeSubmit !== false;
   $('vision-mode').checked = settings.visionMode === true;
+  $('autonomous-mode').checked = settings.autonomousMode === true;
   $('theme').value = settings.theme === 'dark' ? 'dark' : 'light';
   applyTheme(settings.theme);
   for (const f of PROFILE_FIELDS) {
@@ -175,6 +176,7 @@ $('save').addEventListener('click', async () => {
   settings.maxSteps = Math.max(5, Math.min(100, parseInt($('max-steps').value, 10) || 40));
   settings.confirmBeforeSubmit = $('confirm-submit').checked;
   settings.visionMode = $('vision-mode').checked;
+  settings.autonomousMode = $('autonomous-mode').checked;
   settings.theme = $('theme').value;
   applyTheme(settings.theme);
   settings.profile = settings.profile || {};

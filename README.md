@@ -87,6 +87,12 @@ with stale page states.
   `ask_user` instead.
 - Login walls, CAPTCHAs and payments are escalated to you, never guessed.
 - **Stop** aborts the in-flight LLM call and the loop immediately.
+- **⚠️ Autonomous mode** (Settings, off by default, marked dangerous): the
+  agent acts fully on your behalf — no submit confirmations, and `ask_user`
+  is removed so it never pauses. It's instructed to make only honest,
+  conservative judgment calls and list them in the final summary, but *you*
+  own everything it submits. The panel shows a red "autonomous" badge while
+  this is on.
 
 ## Notes & limitations
 
