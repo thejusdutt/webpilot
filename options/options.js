@@ -13,9 +13,26 @@ let settings = {
   providers: {},
   maxSteps: 40,
   confirmBeforeSubmit: true,
+  visionMode: false,
+  theme: 'light',
   profile: {},
   resume: null,
 };
+
+function applyTheme(theme) {
+  document.documentElement.dataset.theme = theme === 'dark' ? 'dark' : 'light';
+}
+
+// Keep in sync when the side panel toggles the theme.
+chrome.storage.onChanged.addListener((changes) => {
+  if (changes.settings?.newValue) {
+    const t = changes.settings.newValue.theme || 'light';
+    settings.theme = t;
+    applyTheme(t);
+    const sel = $('theme');
+    if (sel) sel.value = t;
+  }
+});
 
 // -- provider section -------------------------------------------------------
 
@@ -141,6 +158,8 @@ async function load() {
   $('max-steps').value = settings.maxSteps ?? 40;
   $('confirm-submit').checked = settings.confirmBeforeSubmit !== false;
   $('vision-mode').checked = settings.visionMode === true;
+  $('theme').value = settings.theme === 'dark' ? 'dark' : 'light';
+  applyTheme(settings.theme);
   for (const f of PROFILE_FIELDS) {
     const el = $(`p-${f}`);
     if (el) el.value = settings.profile?.[f] || '';
@@ -148,12 +167,16 @@ async function load() {
   renderResume();
 }
 
+$('theme').addEventListener('change', () => applyTheme($('theme').value));
+
 $('save').addEventListener('click', async () => {
   captureProviderFields();
   settings.activeProvider = currentProviderId();
   settings.maxSteps = Math.max(5, Math.min(100, parseInt($('max-steps').value, 10) || 40));
   settings.confirmBeforeSubmit = $('confirm-submit').checked;
   settings.visionMode = $('vision-mode').checked;
+  settings.theme = $('theme').value;
+  applyTheme(settings.theme);
   settings.profile = settings.profile || {};
   for (const f of PROFILE_FIELDS) {
     const el = $(`p-${f}`);

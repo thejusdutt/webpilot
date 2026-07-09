@@ -7,16 +7,19 @@
 </head>
 <body>
   <header>
-    <div class="brand">🛸 WebPilot</div>
+    <div class="brand"><span class="logo">🛸</span> WebPilot</div>
     <div class="header-right">
       <span id="model-badge" class="badge" title="Active provider · model">…</span>
+      <button id="theme-btn" class="icon-btn" title="Toggle light / dark theme">🌙</button>
       <button id="settings-btn" class="icon-btn" title="Settings">⚙️</button>
     </div>
   </header>
 
   <main id="log" aria-live="polite">
     <div class="welcome" id="welcome">
-      <p>Describe a task and WebPilot will drive this tab for you.</p>
+      <div class="welcome-icon">🛸</div>
+      <h2>What should I do in this tab?</h2>
+      <p>I can fill forms, apply to jobs and click through pages for you — using the profile from Settings.</p>
       <div class="chips">
         <button class="chip" data-task="Fill out the form on this page using my profile. Ask me about anything the profile doesn't cover.">📝 Fill this form</button>
         <button class="chip" data-task="Apply to the job posting on this page. Fill in all required fields from my profile, upload my resume where possible, and ask me before answering anything you're unsure about.">💼 Apply to this job</button>
@@ -31,9 +34,9 @@
   </div>
 
   <footer>
-    <textarea id="task-input" rows="3" placeholder="e.g. Apply to this job with my profile…"></textarea>
+    <textarea id="task-input" rows="3" placeholder="Describe a task… (Ctrl+Enter to run)"></textarea>
     <div class="footer-row">
-      <button id="run-btn" class="primary">▶ Run</button>
+      <button id="run-btn" class="primary">▶ Run task</button>
       <button id="stop-btn" class="danger hidden">■ Stop</button>
     </div>
   </footer>

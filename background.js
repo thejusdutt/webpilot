@@ -16,6 +16,7 @@ export const DEFAULT_SETTINGS = {
   maxSteps: 40,
   confirmBeforeSubmit: true,
   visionMode: false,       // attach a screenshot to every step (vision models only)
+  theme: 'light',          // side panel / options appearance
   profile: {
     fullName: '', email: '', phone: '', location: '',
     linkedin: '', website: '', workAuthorization: '',

@@ -1,12 +1,27 @@
 :root {
-  --bg: #12121a;
-  --panel: #1c1c28;
-  --panel-2: #24243a;
-  --text: #e8e8f0;
-  --muted: #9a9ab0;
-  --accent: #7c5cff;
-  --green: #3ecf8e;
-  --red: #ff5c7a;
+  --bg: #f4f5f9;
+  --surface: #ffffff;
+  --surface-2: #eef0f6;
+  --text: #1b1e2b;
+  --muted: #6a7183;
+  --accent: #5453d6;
+  --green: #178a55;
+  --red: #d23b5c;
+  --border: #e2e5ef;
+  --shadow: 0 1px 3px rgba(23, 26, 45, 0.07);
+}
+
+[data-theme="dark"] {
+  --bg: #12131a;
+  --surface: #1b1d28;
+  --surface-2: #242736;
+  --text: #e9eaf2;
+  --muted: #9aa1b5;
+  --accent: #8583f0;
+  --green: #47cf8f;
+  --red: #ff6d8a;
+  --border: #2b2e40;
+  --shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
 }
 
 * { box-sizing: border-box; }
@@ -17,22 +32,25 @@ body {
   color: var(--text);
   margin: 0;
   font-size: 14px;
+  transition: background 0.2s, color 0.2s;
 }
 
-.wrap { max-width: 760px; margin: 0 auto; padding: 28px 20px 80px; }
+.wrap { max-width: 760px; margin: 0 auto; padding: 28px 20px 90px; }
 
-h1 { font-size: 22px; }
-h2 { font-size: 16px; margin: 0 0 14px; }
+h1 { font-size: 22px; display: flex; align-items: center; gap: 8px; }
+h2 { font-size: 15px; margin: 0 0 16px; display: flex; align-items: baseline; gap: 8px; }
+h2 .hint { font-weight: 400; }
 
 section {
-  background: var(--panel);
-  border: 1px solid #2e2e44;
-  border-radius: 12px;
-  padding: 18px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 20px;
   margin: 18px 0;
+  box-shadow: var(--shadow);
 }
 
-.field { margin-bottom: 14px; }
+.field { margin-bottom: 15px; }
 .field:last-child { margin-bottom: 0; }
 
 .field label {
@@ -40,25 +58,28 @@ section {
   font-size: 12.5px;
   color: var(--muted);
   margin-bottom: 5px;
+  font-weight: 500;
 }
 
 .field.inline { display: flex; align-items: center; gap: 12px; }
-.field.inline label { margin: 0; color: var(--text); }
+.field.inline label { margin: 0; color: var(--text); font-weight: 400; flex: 1; }
 .field.inline input[type="number"] { width: 90px; }
+.field.inline select { width: 160px; }
 
 input[type="text"], input[type="email"], input[type="password"], input[type="number"], select, textarea {
   width: 100%;
   background: var(--bg);
   color: var(--text);
-  border: 1px solid #34345280;
-  border-radius: 8px;
-  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  padding: 9px 11px;
   font-family: inherit;
   font-size: 13px;
 }
-input:focus, select:focus, textarea:focus { outline: 1px solid var(--accent); }
+input:focus, select:focus, textarea:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
 
-.field.inline input[type="checkbox"] { width: auto; }
+input[type="checkbox"] { accent-color: var(--accent); width: 16px; height: 16px; }
+.field.inline input[type="checkbox"] { width: 16px; }
 
 .row { display: flex; gap: 8px; align-items: center; }
 .row input { flex: 1; }
@@ -66,30 +87,32 @@ input:focus, select:focus, textarea:focus { outline: 1px solid var(--accent); }
 .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0 16px; }
 @media (max-width: 560px) { .grid { grid-template-columns: 1fr; } }
 
-.hint { font-size: 12px; color: var(--muted); margin-top: 6px; }
-.hint code { background: var(--panel-2); padding: 1px 5px; border-radius: 4px; }
+.hint { font-size: 12px; color: var(--muted); margin-top: 6px; line-height: 1.5; }
+.hint code { background: var(--surface-2); padding: 1px 5px; border-radius: 4px; }
 .hint.err { color: var(--red); }
 .hint.ok { color: var(--green); }
 
 a { color: var(--accent); font-size: 11.5px; text-decoration: none; margin-left: 6px; }
+a:hover { text-decoration: underline; }
 
 button.primary, button.secondary {
   border: none;
-  border-radius: 8px;
-  padding: 9px 20px;
+  border-radius: 9px;
+  padding: 10px 22px;
   font-weight: 600;
   cursor: pointer;
   font-size: 13px;
-  white-space: nowrap;
+  transition: filter 0.12s;
 }
-button.primary { background: var(--accent); color: white; }
-button.secondary { background: var(--panel-2); color: var(--text); border: 1px solid #34345260; }
+button.primary:hover, button.secondary:hover { filter: brightness(1.06); }
+button.primary { background: var(--accent); color: #fff; }
+button.secondary { background: var(--surface-2); color: var(--text); border: 1px solid var(--border); }
 
 .save-row {
   position: sticky;
   bottom: 0;
-  background: linear-gradient(transparent, var(--bg) 30%);
-  padding: 16px 0;
+  background: linear-gradient(transparent, var(--bg) 35%);
+  padding: 18px 0 8px;
   display: flex;
   align-items: center;
   gap: 12px;
