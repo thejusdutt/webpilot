@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "WebPilot — LLM Browser Agent",
   "version": "0.1.0",
-  "description": "Automate the browser with LLMs: fill forms, apply to jobs, click through flows. Supports OpenRouter, OpenAI, Anthropic, Gemini, Groq, Ollama and custom endpoints.",
+  "description": "Automate your browser with an LLM: fill forms, apply to jobs, click through pages. Bring your own key.",
   "minimum_chrome_version": "116",
   "permissions": [
     "storage",
