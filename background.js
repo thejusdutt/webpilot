@@ -178,7 +178,8 @@ HOW IT WORKS
 - If the DOM state is not enough (canvas widgets, images, visual layout), use the screenshot tool — the screenshot arrives as an image you can see.
 
 RULES
-1. Work step by step. Prefer one or two actions per turn, then re-check the page state.
+1. BE FAST — batch aggressively. When filling a form, emit ALL fill actions (type_text / select_option / set_checkbox) for every visible field in ONE turn; they execute in order and you get the updated state after the last one. Use a new turn only when an action's outcome determines the next one (navigation, a button that reveals new fields, a custom dropdown that must open first).
+1b. Keep commentary to one short sentence per turn, or none.
 2. Fill forms using the USER PROFILE below. NEVER fabricate personal data, qualifications, or answers. If a required field is not covered by the profile or task, call ask_user.
 3. For job applications: read the form carefully, fill every required field, attach the resume with upload_file where a CV/resume upload exists, and answer screening questions truthfully from the profile.
 4. Before clicking a final submit button, double-check that all required fields are filled and the values are correct.
@@ -243,17 +244,22 @@ async function captureScreenshot(tabId, maxWidth = 1024) {
   return { mimeType: 'image/jpeg', base64, dataUrl: `data:image/jpeg;base64,${base64}` };
 }
 
-/** Wait for any in-flight navigation triggered by the last action to finish. */
+/**
+ * Wait for any in-flight navigation triggered by the last action to finish.
+ * Fast path: if no navigation started within ~150ms, return almost immediately —
+ * a fixed long delay here is what makes agents feel sluggish.
+ */
 async function settle(tabId) {
-  await sleep(700);
+  await sleep(150);
+  let tab;
+  try { tab = await chrome.tabs.get(tabId); } catch { throw new Error('The tab was closed.'); }
+  if (tab.status !== 'loading') { await sleep(100); return; }
   const deadline = Date.now() + 15000;
-  for (;;) {
-    let tab;
+  while (tab.status === 'loading' && Date.now() < deadline) {
+    await sleep(200);
     try { tab = await chrome.tabs.get(tabId); } catch { throw new Error('The tab was closed.'); }
-    if (tab.status === 'complete' || Date.now() > deadline) break;
-    await sleep(300);
   }
-  await sleep(300);
+  await sleep(250); // let the new document run its first scripts
 }
 
 // ---------------------------------------------------------------------------
@@ -367,7 +373,7 @@ class AgentRun {
         const r = await sendToTab(this.tabId, 'upload_file', {
           index: args.index, fileName: resume.fileName, mimeType: resume.mimeType, base64: resume.base64,
         });
-        await sleep(1000); // many ATSs parse the file and update the form
+        await sleep(600); // many ATSs parse the file and update the form
         return r.message;
       }
       case 'screenshot': {
