@@ -18,9 +18,12 @@ let replaying = false;
 
 // ---------- theme ----------
 
+const ICON_MOON = '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M21 12.8A8.5 8.5 0 1 1 11.2 3a6.6 6.6 0 0 0 9.8 9.8Z"/></svg>';
+const ICON_SUN = '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5 5l1.6 1.6M17.4 17.4 19 19M19 5l-1.6 1.6M6.6 17.4 5 19"/></svg>';
+
 function applyTheme(theme) {
   document.documentElement.dataset.theme = theme === 'dark' ? 'dark' : 'light';
-  themeBtn.textContent = theme === 'dark' ? '☀️' : '🌙';
+  themeBtn.innerHTML = theme === 'dark' ? ICON_SUN : ICON_MOON;
 }
 
 async function initTheme() {
@@ -86,21 +89,21 @@ function setRunning(v) {
 
 const trim = (s, n = 70) => (String(s).length > n ? String(s).slice(0, n) + '…' : String(s));
 
-/** Human-friendly one-liner for a tool call. */
+/** Human-friendly one-liner for a tool call (minimal, no emoji noise). */
 function describeAction(name, args = {}) {
   switch (name) {
-    case 'click': return `🖱️ Click element [${args.index}]`;
-    case 'type_text': return `⌨️ Type "${trim(args.text)}" into [${args.index}]${args.press_enter ? ' + Enter' : ''}`;
-    case 'select_option': return `▾ Select "${trim(args.value, 50)}" in [${args.index}]`;
-    case 'set_checkbox': return `${args.checked ? '☑️' : '⬜'} ${args.checked ? 'Check' : 'Uncheck'} [${args.index}]`;
-    case 'scroll': return `↕️ Scroll ${args.direction}`;
-    case 'navigate': return `🌐 Go to ${trim(args.url, 60)}`;
-    case 'go_back': return '◀️ Go back';
-    case 'wait': return `⏳ Wait ${args.seconds}s`;
-    case 'read_page': return '📖 Read page text';
-    case 'screenshot': return '📸 Take screenshot';
-    case 'upload_file': return `📎 Attach resume to [${args.index}]`;
-    case 'ask_user': return '❓ Ask you a question';
+    case 'click': return `Click [${args.index}]`;
+    case 'type_text': return `Type “${trim(args.text)}” → [${args.index}]${args.press_enter ? ' + Enter' : ''}`;
+    case 'select_option': return `Select “${trim(args.value, 50)}” → [${args.index}]`;
+    case 'set_checkbox': return `${args.checked ? 'Check' : 'Uncheck'} [${args.index}]`;
+    case 'scroll': return `Scroll ${args.direction}`;
+    case 'navigate': return `Open ${trim(args.url, 60)}`;
+    case 'go_back': return 'Go back';
+    case 'wait': return `Wait ${args.seconds}s`;
+    case 'read_page': return 'Read page text';
+    case 'screenshot': return 'Take screenshot';
+    case 'upload_file': return `Attach resume → [${args.index}]`;
+    case 'ask_user': return 'Ask you a question';
     default: return `${name}(${JSON.stringify(args)})`;
   }
 }
@@ -138,7 +141,7 @@ function onMessage(msg) {
       addEntry('action', describeAction(msg.name, msg.args));
       break;
     case 'result':
-      addEntry(`result${msg.isError ? ' error' : ''}`, (msg.isError ? '✕ ' : '✓ ') + msg.text.split('\n')[0].slice(0, 300));
+      addEntry(`result${msg.isError ? ' error' : ''}`, msg.text.split('\n')[0].slice(0, 300));
       break;
     case 'screenshot': {
       const div = addEntry('shot', '');
@@ -155,10 +158,10 @@ function onMessage(msg) {
       showConfirm(msg.text);
       break;
     case 'error':
-      addEntry('error', `⚠️ ${msg.text}`);
+      addEntry('error', msg.text);
       break;
     case 'done':
-      addEntry(msg.success ? 'done-ok' : 'done-fail', `${msg.success ? '✅' : '⚠️'} ${msg.text}`);
+      addEntry(msg.success ? 'done-ok' : 'done-fail', msg.text);
       setRunning(false);
       break;
   }
@@ -171,8 +174,12 @@ function hidePrompt() {
   promptControls.innerHTML = '';
 }
 
+const promptKind = document.getElementById('prompt-kind');
+
 function showAsk(question) {
-  promptText.textContent = `❓ ${question}`;
+  promptKind.textContent = 'Question';
+  promptKind.className = '';
+  promptText.textContent = question;
   promptControls.innerHTML = '';
   const input = document.createElement('input');
   input.type = 'text';
@@ -197,7 +204,9 @@ function showAsk(question) {
 }
 
 function showConfirm(text) {
-  promptText.textContent = `🛑 ${text}`;
+  promptKind.textContent = 'Approval needed';
+  promptKind.className = 'danger';
+  promptText.textContent = text;
   promptControls.innerHTML = '';
   const yes = document.createElement('button');
   yes.className = 'primary';
@@ -265,7 +274,7 @@ async function refreshBadge() {
   const model = settings?.providers?.[provider]?.model || '';
   modelBadge.textContent = model ? `${provider} · ${model}` : provider;
   if (settings?.autonomousMode) {
-    modelBadge.textContent = `⚠️ autonomous · ${modelBadge.textContent}`;
+    modelBadge.textContent = `autonomous · ${modelBadge.textContent}`;
     modelBadge.classList.add('danger');
     modelBadge.title = 'Autonomous mode is ON — no confirmations, no questions (change in Settings)';
   } else {

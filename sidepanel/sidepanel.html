@@ -7,37 +7,43 @@
 </head>
 <body>
   <header>
-    <div class="brand"><span class="logo">🛸</span> WebPilot</div>
+    <div class="brand"><span class="logo"></span>WebPilot</div>
     <div class="header-right">
       <span id="model-badge" class="badge" title="Active provider · model">…</span>
-      <button id="theme-btn" class="icon-btn" title="Toggle light / dark theme">🌙</button>
-      <button id="settings-btn" class="icon-btn" title="Settings">⚙️</button>
+      <button id="theme-btn" class="icon-btn" title="Toggle light / dark theme" aria-label="Toggle theme">
+        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M21 12.8A8.5 8.5 0 1 1 11.2 3a6.6 6.6 0 0 0 9.8 9.8Z"/></svg>
+      </button>
+      <button id="settings-btn" class="icon-btn" title="Settings" aria-label="Settings">
+        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3.2"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.7 1.7 0 0 0-1.87-.34 1.7 1.7 0 0 0-1.03 1.56V21a2 2 0 1 1-4 0v-.09a1.7 1.7 0 0 0-1.11-1.56 1.7 1.7 0 0 0-1.87.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.7 1.7 0 0 0 .34-1.87 1.7 1.7 0 0 0-1.56-1.03H3a2 2 0 1 1 0-4h.09a1.7 1.7 0 0 0 1.56-1.11 1.7 1.7 0 0 0-.34-1.87l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.7 1.7 0 0 0 1.87.34h.08A1.7 1.7 0 0 0 10 4.09V4a2 2 0 1 1 4 0v.09a1.7 1.7 0 0 0 1.03 1.56 1.7 1.7 0 0 0 1.87-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.7 1.7 0 0 0-.34 1.87v.08c.26.63.87 1.05 1.56 1.06H21a2 2 0 1 1 0 4h-.09a1.7 1.7 0 0 0-1.51 1.05Z"/></svg>
+      </button>
     </div>
   </header>
 
   <main id="log" aria-live="polite">
     <div class="welcome" id="welcome">
-      <div class="welcome-icon">🛸</div>
+      <div class="welcome-mark"></div>
       <h2>What should I do in this tab?</h2>
-      <p>I can fill forms, apply to jobs and click through pages for you — using the profile from Settings.</p>
+      <p>I fill forms, apply to jobs and click through pages — using the profile from Settings.</p>
       <div class="chips">
-        <button class="chip" data-task="Fill out the form on this page using my profile. Ask me about anything the profile doesn't cover.">📝 Fill this form</button>
-        <button class="chip" data-task="Apply to the job posting on this page. Fill in all required fields from my profile, upload my resume where possible, and ask me before answering anything you're unsure about.">💼 Apply to this job</button>
-        <button class="chip" data-task="Summarize what's on this page.">📄 Summarize page</button>
+        <button class="chip" data-task="Fill out the form on this page using my profile. Ask me about anything the profile doesn't cover.">Fill this form<span>↗</span></button>
+        <button class="chip" data-task="Apply to the job posting on this page. Fill in all required fields from my profile, upload my resume where possible, and ask me before answering anything you're unsure about.">Apply to this job<span>↗</span></button>
+        <button class="chip" data-task="Summarize what's on this page.">Summarize this page<span>↗</span></button>
       </div>
     </div>
   </main>
 
   <div id="prompt-area" class="hidden">
+    <div id="prompt-kind"></div>
     <div id="prompt-text"></div>
     <div id="prompt-controls"></div>
   </div>
 
   <footer>
-    <textarea id="task-input" rows="3" placeholder="Describe a task… (Ctrl+Enter to run)"></textarea>
+    <textarea id="task-input" rows="2" placeholder="Describe a task…"></textarea>
     <div class="footer-row">
-      <button id="run-btn" class="primary">▶ Run task</button>
-      <button id="stop-btn" class="danger hidden">■ Stop</button>
+      <button id="run-btn" class="primary">Run</button>
+      <button id="stop-btn" class="danger hidden">Stop</button>
+      <span class="kbd-hint">Ctrl ↵</span>
     </div>
   </footer>
 
