@@ -12,10 +12,15 @@ chrome.sidePanel.setOptions({ enabled: false }).catch(() => {});
 chrome.runtime.onInstalled.addListener(() => {
   chrome.sidePanel.setOptions({ enabled: false }).catch(() => {});
 });
-chrome.action.onClicked.addListener(async (tab) => {
+chrome.action.onClicked.addListener((tab) => {
   if (!tab?.id) return;
-  await chrome.sidePanel.setOptions({ tabId: tab.id, path: 'sidepanel/sidepanel.html', enabled: true });
-  await chrome.sidePanel.open({ tabId: tab.id });
+  // Both calls must be issued synchronously: awaiting setOptions() first can
+  // drop the user-gesture context that sidePanel.open() requires (they are
+  // still processed in order by the browser).
+  chrome.sidePanel.setOptions({ tabId: tab.id, path: 'sidepanel/sidepanel.html', enabled: true })
+    .catch((e) => console.warn('sidePanel.setOptions failed:', e.message));
+  chrome.sidePanel.open({ tabId: tab.id })
+    .catch((e) => console.warn('sidePanel.open failed:', e.message));
 });
 
 // ---------------------------------------------------------------------------
