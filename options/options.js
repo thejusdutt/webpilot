@@ -173,7 +173,7 @@ $('theme').addEventListener('change', () => applyTheme($('theme').value));
 $('save').addEventListener('click', async () => {
   captureProviderFields();
   settings.activeProvider = currentProviderId();
-  settings.maxSteps = Math.max(5, Math.min(100, parseInt($('max-steps').value, 10) || 40));
+  settings.maxSteps = Math.max(5, Math.min(1000, parseInt($('max-steps').value, 10) || 40));
   settings.confirmBeforeSubmit = $('confirm-submit').checked;
   settings.visionMode = $('vision-mode').checked;
   settings.autonomousMode = $('autonomous-mode').checked;

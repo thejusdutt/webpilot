@@ -441,7 +441,7 @@ class AgentRun {
       content: `TASK: ${this.task}\n\n${await this.pageStateBlock()}`,
     });
 
-    const maxSteps = Math.max(1, Math.min(this.settings.maxSteps || 40, 100));
+    const maxSteps = Math.max(1, Math.min(this.settings.maxSteps || 40, 1000));
 
     for (let step = 1; step <= maxSteps; step++) {
       this.checkStopped();
