@@ -24,7 +24,9 @@ on your device.
 
 1. Open `chrome://extensions`, enable **Developer mode**.
 2. **Load unpacked** → select this folder (`webpilot/`).
-3. Click the extension icon to open the side panel (pin it for convenience).
+3. Click the extension icon to open the side panel **on the current tab**
+   (pin the icon for convenience). The panel is tab-scoped: it hides when you
+   switch to another tab and comes back — log intact — when you return.
 4. Open **Settings** (⚙️ in the panel):
    - pick a provider, paste an API key, click **List models** and choose a model;
    - fill in **Your profile** (used verbatim for form filling — the agent is

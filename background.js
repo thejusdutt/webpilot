@@ -4,7 +4,19 @@
 
 import { chat, listModels, PROVIDERS } from './providers.js';
 
-chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true }).catch(() => {});
+// Per-TAB side panel: disabled globally, enabled only for the tab where the
+// user clicks the toolbar icon. Switching tabs hides it; switching back
+// restores it (the panel document reloads — the event replay below restores
+// the log).
+chrome.sidePanel.setOptions({ enabled: false }).catch(() => {});
+chrome.runtime.onInstalled.addListener(() => {
+  chrome.sidePanel.setOptions({ enabled: false }).catch(() => {});
+});
+chrome.action.onClicked.addListener(async (tab) => {
+  if (!tab?.id) return;
+  await chrome.sidePanel.setOptions({ tabId: tab.id, path: 'sidepanel/sidepanel.html', enabled: true });
+  await chrome.sidePanel.open({ tabId: tab.id });
+});
 
 // ---------------------------------------------------------------------------
 // Settings
@@ -503,15 +515,24 @@ class AgentRun {
 
 let panelPort = null;
 let currentRun = null;
+let eventLog = [];       // buffered run events, replayed when a panel (re)connects
+let lastPrompt = null;   // pending ask/confirm, re-shown on reconnect
 
 function postToPanel(msg) {
+  if (msg.type === 'ask' || msg.type === 'confirm') {
+    lastPrompt = { kind: msg.type, text: msg.text };
+  } else {
+    if (msg.type === 'done' || msg.type === 'error') lastPrompt = null;
+    eventLog.push(msg);
+    if (eventLog.length > 400) eventLog.splice(0, eventLog.length - 400);
+  }
   try { panelPort?.postMessage(msg); } catch { /* panel closed */ }
 }
 
 chrome.runtime.onConnect.addListener((port) => {
   if (port.name !== 'webpilot-panel') return;
   panelPort = port;
-  port.postMessage({ type: 'hello', running: !!currentRun });
+  port.postMessage({ type: 'hello', running: !!currentRun, events: eventLog, prompt: lastPrompt });
 
   port.onMessage.addListener(async (msg) => {
     if (msg.type === 'start') {
@@ -526,7 +547,10 @@ chrome.runtime.onConnect.addListener((port) => {
       }
       if (!tabId) { postToPanel({ type: 'error', text: 'No active tab found.' }); return; }
 
+      eventLog = [];
+      lastPrompt = null;
       currentRun = new AgentRun(msg.task, tabId, settings, postToPanel);
+      postToPanel({ type: 'status', text: `Task: ${msg.task}` });
       postToPanel({ type: 'started' });
       // MV3 service workers idle out after ~30s without extension API activity;
       // a slow LLM response alone doesn't count. Ping a cheap API to stay alive.
@@ -547,6 +571,10 @@ chrome.runtime.onConnect.addListener((port) => {
     } else if (msg.type === 'stop') {
       currentRun?.stop();
     } else if (msg.type === 'user_answer') {
+      lastPrompt = null;
+      if (msg.answer && msg.answer !== 'yes' && msg.answer !== 'no') {
+        eventLog.push({ type: 'status', text: `You: ${msg.answer}` });
+      }
       currentRun?.provideAnswer(msg.answer);
     }
   });

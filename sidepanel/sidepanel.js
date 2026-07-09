@@ -14,6 +14,7 @@ const themeBtn = document.getElementById('theme-btn');
 let port = null;
 let running = false;
 let thinkingEl = null;
+let replaying = false;
 
 // ---------- theme ----------
 
@@ -60,6 +61,7 @@ function addEntry(cls, text) {
 }
 
 function showThinking() {
+  if (replaying) return;
   hideThinking();
   thinkingEl = document.createElement('div');
   thinkingEl.className = 'entry thinking';
@@ -107,7 +109,17 @@ function onMessage(msg) {
   if (['thought', 'action', 'result', 'error', 'done', 'screenshot'].includes(msg.type)) hideThinking();
   switch (msg.type) {
     case 'hello':
+      // Panel (re)opened — per-tab panels reload on every tab switch, so the
+      // service worker replays the buffered run log to restore the view.
+      if (msg.events?.length) {
+        log.innerHTML = '';
+        replaying = true;
+        for (const e of msg.events) onMessage(e);
+        replaying = false;
+      }
       setRunning(msg.running);
+      if (msg.running) showThinking();
+      if (msg.prompt) (msg.prompt.kind === 'confirm' ? showConfirm : showAsk)(msg.prompt.text);
       break;
     case 'started':
       setRunning(true);
@@ -213,7 +225,8 @@ function showConfirm(text) {
 
 async function startTask(task) {
   if (running || !task) return;
-  addEntry('status', `Task: ${task}`);
+  // The background echoes the task back as a status event (so it also
+  // survives panel reloads) — no local entry needed.
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
   ensurePort().postMessage({ type: 'start', task, tabId: tab?.id });
 }
