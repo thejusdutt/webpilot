@@ -1,0 +1,28 @@
+{
+  "manifest_version": 3,
+  "name": "WebPilot — LLM Browser Agent",
+  "version": "0.1.0",
+  "description": "Automate the browser with LLMs: fill forms, apply to jobs, click through flows. Supports OpenRouter, OpenAI, Anthropic, Gemini, Groq, Ollama and custom endpoints.",
+  "minimum_chrome_version": "116",
+  "permissions": [
+    "storage",
+    "tabs",
+    "activeTab",
+    "scripting",
+    "sidePanel"
+  ],
+  "host_permissions": [
+    "<all_urls>"
+  ],
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "action": {
+    "default_title": "Open WebPilot"
+  },
+  "side_panel": {
+    "default_path": "sidepanel/sidepanel.html"
+  },
+  "options_page": "options/options.html"
+}

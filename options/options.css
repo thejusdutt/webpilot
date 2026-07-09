@@ -1,0 +1,96 @@
+:root {
+  --bg: #12121a;
+  --panel: #1c1c28;
+  --panel-2: #24243a;
+  --text: #e8e8f0;
+  --muted: #9a9ab0;
+  --accent: #7c5cff;
+  --green: #3ecf8e;
+  --red: #ff5c7a;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  margin: 0;
+  font-size: 14px;
+}
+
+.wrap { max-width: 760px; margin: 0 auto; padding: 28px 20px 80px; }
+
+h1 { font-size: 22px; }
+h2 { font-size: 16px; margin: 0 0 14px; }
+
+section {
+  background: var(--panel);
+  border: 1px solid #2e2e44;
+  border-radius: 12px;
+  padding: 18px;
+  margin: 18px 0;
+}
+
+.field { margin-bottom: 14px; }
+.field:last-child { margin-bottom: 0; }
+
+.field label {
+  display: block;
+  font-size: 12.5px;
+  color: var(--muted);
+  margin-bottom: 5px;
+}
+
+.field.inline { display: flex; align-items: center; gap: 12px; }
+.field.inline label { margin: 0; color: var(--text); }
+.field.inline input[type="number"] { width: 90px; }
+
+input[type="text"], input[type="email"], input[type="password"], input[type="number"], select, textarea {
+  width: 100%;
+  background: var(--bg);
+  color: var(--text);
+  border: 1px solid #34345280;
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-family: inherit;
+  font-size: 13px;
+}
+input:focus, select:focus, textarea:focus { outline: 1px solid var(--accent); }
+
+.field.inline input[type="checkbox"] { width: auto; }
+
+.row { display: flex; gap: 8px; align-items: center; }
+.row input { flex: 1; }
+
+.grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0 16px; }
+@media (max-width: 560px) { .grid { grid-template-columns: 1fr; } }
+
+.hint { font-size: 12px; color: var(--muted); margin-top: 6px; }
+.hint code { background: var(--panel-2); padding: 1px 5px; border-radius: 4px; }
+.hint.err { color: var(--red); }
+.hint.ok { color: var(--green); }
+
+a { color: var(--accent); font-size: 11.5px; text-decoration: none; margin-left: 6px; }
+
+button.primary, button.secondary {
+  border: none;
+  border-radius: 8px;
+  padding: 9px 20px;
+  font-weight: 600;
+  cursor: pointer;
+  font-size: 13px;
+  white-space: nowrap;
+}
+button.primary { background: var(--accent); color: white; }
+button.secondary { background: var(--panel-2); color: var(--text); border: 1px solid #34345260; }
+
+.save-row {
+  position: sticky;
+  bottom: 0;
+  background: linear-gradient(transparent, var(--bg) 30%);
+  padding: 16px 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}

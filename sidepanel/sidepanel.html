@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>WebPilot</title>
+  <link rel="stylesheet" href="sidepanel.css" />
+</head>
+<body>
+  <header>
+    <div class="brand">🛸 WebPilot</div>
+    <div class="header-right">
+      <span id="model-badge" class="badge" title="Active provider · model">…</span>
+      <button id="settings-btn" class="icon-btn" title="Settings">⚙️</button>
+    </div>
+  </header>
+
+  <main id="log" aria-live="polite">
+    <div class="welcome" id="welcome">
+      <p>Describe a task and WebPilot will drive this tab for you.</p>
+      <div class="chips">
+        <button class="chip" data-task="Fill out the form on this page using my profile. Ask me about anything the profile doesn't cover.">📝 Fill this form</button>
+        <button class="chip" data-task="Apply to the job posting on this page. Fill in all required fields from my profile, upload my resume where possible, and ask me before answering anything you're unsure about.">💼 Apply to this job</button>
+        <button class="chip" data-task="Summarize what's on this page.">📄 Summarize page</button>
+      </div>
+    </div>
+  </main>
+
+  <div id="prompt-area" class="hidden">
+    <div id="prompt-text"></div>
+    <div id="prompt-controls"></div>
+  </div>
+
+  <footer>
+    <textarea id="task-input" rows="3" placeholder="e.g. Apply to this job with my profile…"></textarea>
+    <div class="footer-row">
+      <button id="run-btn" class="primary">▶ Run</button>
+      <button id="stop-btn" class="danger hidden">■ Stop</button>
+    </div>
+  </footer>
+
+  <script src="sidepanel.js"></script>
+</body>
+</html>
