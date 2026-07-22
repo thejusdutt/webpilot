@@ -16,13 +16,28 @@
     '[contenteditable="true"]', '[contenteditable=""]', '[onclick]', '[tabindex]:not([tabindex="-1"])',
   ].join(',');
 
-  function isVisible(el) {
+  function isVisiblePlain(el) {
     if (el.closest('[hidden],[aria-hidden="true"]')) return false;
     const style = getComputedStyle(el);
     if (style.display === 'none' || style.visibility === 'hidden' || style.opacity === '0') return false;
     const rect = el.getBoundingClientRect();
     if (rect.width < 2 || rect.height < 2) return false;
     return true;
+  }
+
+  function isVisible(el) {
+    // Custom-styled radios/checkboxes hide the native input (opacity:0, 0×0, or
+    // clipped) and render a styled label/proxy that's what the user actually sees.
+    // Keep such an input if its label is visible, so it still appears in snapshots.
+    if (el instanceof HTMLInputElement && (el.type === 'radio' || el.type === 'checkbox')) {
+      if (isVisiblePlain(el)) return true;
+      if (el.closest('[hidden],[aria-hidden="true"]')) return false;
+      // Any hiding technique (display:none, visibility, opacity:0, 1×1 clip) is
+      // fine as long as the styled label the user sees is visible.
+      const lbl = labelEl(el);
+      return !!(lbl && isVisiblePlain(lbl));
+    }
+    return isVisiblePlain(el);
   }
 
   function inViewport(el) {
@@ -34,15 +49,19 @@
     return (text || '').replace(/\s+/g, ' ').trim().slice(0, max);
   }
 
-  function labelFor(el) {
+  function labelEl(el) {
     // Explicit <label for=...>
     if (el.id) {
       const lbl = document.querySelector(`label[for="${CSS.escape(el.id)}"]`);
-      if (lbl) return clean(lbl.innerText);
+      if (lbl) return lbl;
     }
     // Wrapping label
-    const wrap = el.closest('label');
-    if (wrap) return clean(wrap.innerText);
+    return el.closest('label');
+  }
+
+  function labelFor(el) {
+    const lbl = labelEl(el);
+    if (lbl) return clean(lbl.innerText);
     return (
       clean(el.getAttribute('aria-label')) ||
       clean(el.getAttribute('placeholder')) ||
@@ -85,6 +104,10 @@
         parts.push(`value="${clean(el.value, 60)}"`);
       }
     }
+    if (tag !== 'input' && (role === 'checkbox' || role === 'radio' || role === 'switch')) {
+      const ac = el.getAttribute('aria-checked');
+      parts.push(ac === 'true' ? 'checked' : ac === 'mixed' ? 'mixed' : 'unchecked');
+    }
     if (el.isContentEditable && el.innerText) parts.push(`text="${clean(el.innerText, 60)}"`);
     if (el.required || el.getAttribute('aria-required') === 'true') parts.push('required');
     if (el.disabled) parts.push('disabled');
@@ -98,8 +121,11 @@
     const lines = [];
     for (const el of document.querySelectorAll(INTERACTIVE_SELECTOR)) {
       if (seen.has(el) || !isVisible(el)) continue;
-      // Skip wrappers whose interactive child will be listed anyway.
-      if (el.matches('[onclick],[tabindex]') && el.querySelector(INTERACTIVE_SELECTOR)) continue;
+      // Skip wrappers whose interactive child will be listed anyway — but only
+      // if that child is actually visible; custom widgets (e.g. role=checkbox
+      // wrapping a hidden native input) must keep the wrapper.
+      if (el.matches('[onclick],[tabindex]')
+        && [...el.querySelectorAll(INTERACTIVE_SELECTOR)].some(isVisible)) continue;
       seen.add(el);
       const index = elementRegistry.length;
       elementRegistry.push(el);
@@ -232,7 +258,10 @@
         if (el.checked !== checked) el.click();
         if (el.checked !== checked) { el.checked = checked; el.dispatchEvent(new Event('change', { bubbles: true })); }
       } else {
-        el.click(); // role=checkbox / switch widgets
+        // role=checkbox / radio / switch widgets: only click when the current
+        // aria-checked state differs from the target, otherwise we'd toggle it off.
+        const current = el.getAttribute('aria-checked') === 'true';
+        if (current !== checked) el.click();
       }
       return { ok: true, message: `Set [${index}] to ${checked ? 'checked' : 'unchecked'}` };
     },
