@@ -228,7 +228,8 @@
         throw new Error(`Element [${index}] is not a text input.`);
       }
       if (press_enter) pressEnter(el);
-      return { ok: true, message: `Typed into [${index}]: "${clean(text, 80)}"${press_enter ? ' and pressed Enter' : ''}` };
+      const lbl = labelFor(el);
+      return { ok: true, message: `Typed into [${index}]${lbl ? ` "${lbl}"` : ''}: "${clean(text, 80)}"${press_enter ? ' and pressed Enter' : ''}` };
     },
 
     select_option({ index, value }) {
@@ -247,7 +248,8 @@
       el.value = opt.value;
       el.dispatchEvent(new Event('input', { bubbles: true }));
       el.dispatchEvent(new Event('change', { bubbles: true }));
-      return { ok: true, message: `Selected "${clean(opt.textContent, 60)}" in [${index}]` };
+      const lbl = labelFor(el);
+      return { ok: true, message: `Selected "${clean(opt.textContent, 60)}" in [${index}]${lbl ? ` "${lbl}"` : ''}` };
     },
 
     set_checkbox({ index, checked }) {
@@ -263,7 +265,8 @@
         const current = el.getAttribute('aria-checked') === 'true';
         if (current !== checked) el.click();
       }
-      return { ok: true, message: `Set [${index}] to ${checked ? 'checked' : 'unchecked'}` };
+      const lbl = labelFor(el);
+      return { ok: true, message: `Set [${index}]${lbl ? ` "${lbl}"` : ''} to ${checked ? 'checked' : 'unchecked'}` };
     },
 
     scroll({ direction }) {
@@ -294,7 +297,8 @@
       el.dispatchEvent(new Event('input', { bubbles: true }));
       el.dispatchEvent(new Event('change', { bubbles: true }));
       flash(el);
-      return { ok: true, message: `Attached "${fileName}" to [${index}]` };
+      const lbl = labelFor(el);
+      return { ok: true, message: `Attached "${fileName}" to [${index}]${lbl ? ` "${lbl}"` : ''}` };
     },
   };
 

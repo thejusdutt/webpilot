@@ -209,6 +209,7 @@ RULES
 3. For job applications: read the form carefully, fill every required field, attach the resume with upload_file where a CV/resume upload exists, and answer screening questions truthfully from the profile.
 4. Before clicking a final submit button, double-check that all required fields are filled and the values are correct.
 5. If the same action fails twice, try a different approach (scroll, read_page, another element) instead of repeating it.
+5b. When you finish a page or section of a multi-page form, state in one short sentence what you completed (e.g. "Page 1 done: contact info filled, CV uploaded"). Old page details get pruned from history — this note is your durable memory.
 6. If a page requires login, CAPTCHA, or payment, ${settings.autonomousMode
     ? 'call done(success=false) explaining what blocked you — never guess credentials.'
     : 'stop and ask_user — never guess credentials.'}
@@ -296,6 +297,7 @@ async function settle(tabId) {
 // ---------------------------------------------------------------------------
 
 const PAGE_STATE_RE = /<page_state>[\s\S]*?<\/page_state>/g;
+const PAGE_TEXT_RE = /<page_text>[\s\S]*?<\/page_text>/g;
 
 class AgentRun {
   constructor(task, tabId, settings, post) {
@@ -338,17 +340,63 @@ class AgentRun {
     }
   }
 
-  /** Keep only the newest page state and screenshot — old ones dominate token usage. */
+  /** Keep only the newest page state, page text and screenshot — old ones dominate token usage. */
   pruneOldPageStates() {
     for (const m of this.messages) {
       if ((m.role === 'tool' || m.role === 'user') && typeof m.content === 'string') {
         m.content = m.content.replace(PAGE_STATE_RE, '[stale page state removed — see the latest one below]');
+        m.content = m.content.replace(PAGE_TEXT_RE, '[stale page text removed]');
       }
       if (m.images?.length) {
         delete m.images;
         m.content = '[stale screenshot removed — see the latest one below]';
       }
     }
+  }
+
+  /**
+   * Bound the history so small-context models never lose the system prompt.
+   * Keeps messages[0] (system), messages[1] (task), and the last KEEP_TAIL
+   * messages verbatim; compresses everything in between into a single
+   * user-role digest of one-line-per-step bullets. Runs each turn.
+   */
+  capHistory() {
+    const KEEP_TAIL = 40;
+    const CAP = 48;
+    const DIGEST_PREFIX = 'PROGRESS SO FAR (older steps compressed):\n';
+    if (this.messages.length <= CAP) return;
+
+    let start = this.messages.length - KEEP_TAIL;
+    // Don't let the kept tail begin with orphaned tool results whose parent
+    // assistant (toolCalls) message is being removed — drop those leading tool
+    // messages into the digest too, advancing until the tail starts on a
+    // non-tool message (simpler and correct: the whole tool group is removed).
+    while (start < this.messages.length && this.messages[start].role === 'tool') start++;
+    if (start <= 2) return; // nothing between the pinned head and the tail
+
+    const removed = this.messages.slice(2, start);
+    let carried = [];          // bullets from a previous digest sitting at index 2
+    const bullets = [];
+    for (const m of removed) {
+      if (m.role === 'user' && typeof m.content === 'string' && m.content.startsWith(DIGEST_PREFIX)) {
+        // Merge, don't stack: carry the earlier digest's bullets forward.
+        carried = m.content.slice(DIGEST_PREFIX.length).split('\n').filter((l) => l.trim());
+        continue;
+      }
+      if (m.role === 'tool' && typeof m.content === 'string') {
+        const firstLine = m.content.split('\n')[0].trim();
+        // Skip stale placeholders and raw page-text markers — no signal there.
+        if (!firstLine || /^\[stale /.test(firstLine) || /^<page_(state|text)>/.test(firstLine)) continue;
+        bullets.push(`- ${firstLine}`);
+      } else if (m.role === 'assistant' && typeof m.content === 'string' && m.content.trim()) {
+        bullets.push(`- ${m.content.trim().slice(0, 150)}`);
+      }
+    }
+
+    // Keep the most recent ~60 lines if the digest grows large.
+    const combined = carried.concat(bullets).slice(-60);
+    const digest = { role: 'user', content: DIGEST_PREFIX + combined.join('\n') };
+    this.messages.splice(2, start - 2, digest);
   }
 
   async executeTool(tc) {
@@ -380,7 +428,9 @@ class AgentRun {
       case 'scroll':
         return (await sendToTab(this.tabId, 'scroll', args)).message;
       case 'read_page':
-        return (await sendToTab(this.tabId, 'read_page', args)).message;
+        // Wrap in a marker so pruneOldPageStates can strip stale dumps later —
+        // like page states, only the newest read_page output stays useful.
+        return `<page_text>\n${(await sendToTab(this.tabId, 'read_page', args)).message}\n</page_text>`;
       case 'navigate': {
         let url = String(args.url || '');
         if (!/^https?:\/\//i.test(url)) url = 'https://' + url;
@@ -446,6 +496,7 @@ class AgentRun {
     for (let step = 1; step <= maxSteps; step++) {
       this.checkStopped();
       this.post({ type: 'step', step, maxSteps });
+      this.capHistory();
 
       let reply;
       try {

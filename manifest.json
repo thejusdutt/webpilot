@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "WebPilot — LLM Browser Agent",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "Automate your browser with an LLM: fill forms, apply to jobs, click through pages. Bring your own key.",
   "minimum_chrome_version": "116",
   "permissions": [
